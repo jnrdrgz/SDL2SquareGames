@@ -1,1 +1,1 @@
-Snake
+A little infinite snake game

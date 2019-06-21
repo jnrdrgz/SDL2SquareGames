@@ -208,6 +208,7 @@ int main(int argc, char* args[])
                 break;
         }
 
+
         if(sn.sq.get_Tile().x == fd.sq.get_Tile().x && sn.sq.get_Tile().y == fd.sq.get_Tile().y){
             fd.changePos();
             Square s = Square(sn.sq.get_prevTile().x, sn.sq.get_prevTile().y);
@@ -222,7 +223,7 @@ int main(int argc, char* args[])
         sn.draw();
         fd.draw();
 
-        SDL_SetRenderDrawColor( game.renderer, 0xff, 0xff, 0xff, 0xff);
+        SDL_SetRenderDrawColor( game.renderer, 0x00, 0x00, 0x00, 0x00);
 
 
         frameTime = SDL_GetTicks() - frameStart;
