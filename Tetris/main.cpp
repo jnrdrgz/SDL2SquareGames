@@ -3,13 +3,14 @@
 #include <vector>
 
 #include <stdlib.h> // srand rand
+#include <time.h>
 
 #include "Game.hpp"
 
 #define LOG_COMMENT(msg) std::cout << msg << "\n";
 
-const int SCREEN_WIDTH = 320;
-const int SCREEN_HEIGHT = 640;
+const int SCREEN_WIDTH = 540;
+const int SCREEN_HEIGHT = 960;
 const int TILE_SIZE = SCREEN_WIDTH/10;
 
 Game game;
@@ -18,6 +19,7 @@ SDL_Event event;
 enum direction {RIGHT, LEFT, UP, DOWN};
 enum block_type {IBLOCK, OBLOCK, LBLOCK, INVLBLOCK, TBLOCK, NBLOCK, INVNBLOCK};
 enum color {CYAN=1, RED, GREEN, PURPLE, ORANGE, BLUE, WHITE};
+enum game_state {MENU, GAME, END};
 
 int tiles[SCREEN_HEIGHT/TILE_SIZE][SCREEN_WIDTH/TILE_SIZE] = {0};
 
@@ -56,13 +58,23 @@ bool allBiggerZero(int arr[]){
     return true;
 }
 
-void updateTiles(){
+bool allZero(int arr[]){
+    for(int i = 0; i < SCREEN_WIDTH/TILE_SIZE; i++){
+        if(arr[i] > 0){
+            return false;
+        }
+    }
+    return true;
+}
+
+int updateTiles(int& lines){
     int n = 0;
     for(int i = 0; i < SCREEN_HEIGHT/TILE_SIZE; i++){
         n = sum_arr(SCREEN_WIDTH/TILE_SIZE, tiles[i]);
         if(allBiggerZero(tiles[i])){
             for(int j = 0; j<SCREEN_WIDTH/TILE_SIZE; j++){
                 tiles[i][j] = 0;
+                lines++;
             }
         }
     }
@@ -75,6 +87,12 @@ void updateTiles(){
             arr_cpy(tiles[i-1], zero_arr, SCREEN_WIDTH/TILE_SIZE);
         }
     }
+
+    if(allZero(tiles[0])){
+        return 0;
+    }
+
+    return 1;
 }
 
 struct Tile
@@ -404,7 +422,7 @@ public:
 
 int main(int argc, char* args[])
 {
-    const int FPS = 10;
+    const int FPS = 60;
 	const int frameDelay = 1000 / FPS;
     srand (SDL_GetTicks());
 
@@ -418,6 +436,13 @@ int main(int argc, char* args[])
 
     int frames = 0;
     bool pushed = false;
+    int lines = 0;
+    int prevlines = 0;
+
+    bool fallq = false;
+
+    game_state state = MENU;
+
 
 
     while(game.running){
@@ -437,17 +462,18 @@ int main(int argc, char* args[])
                 pushed = true;
 
                 switch(event.key.keysym.sym){
+                    if(state == GAME){
                     case SDLK_RIGHT:
                         bk.mov(RIGHT);
                     break;
                     case SDLK_LEFT:
                         bk.mov(LEFT);
                     break;
-                    case SDLK_UP:
-                        bk.rotate();
-                    break;
+//                    case SDLK_UP:
+//                        bk.rotate();
+//                    break;
                     case SDLK_DOWN:
-
+                        fallq = true;
                     break;
                     case SDLK_f:
 
@@ -462,12 +488,20 @@ int main(int argc, char* args[])
                             }
                         }
                     break;
+                    }
+                }
+
+                if(event.key.keysym.sym == SDLK_UP){
+                    if(state == GAME){
+                    bk.rotate();
+                    }
                 }
                 }
             break;
 
             case SDL_KEYUP:
                 if(pushed){pushed = false;}
+                fallq = false;
                 //LOG_COMMENT(pushed);
                 switch(event.key.keysym.sym){
                     case SDLK_RIGHT:
@@ -477,43 +511,118 @@ int main(int argc, char* args[])
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
+                if(state == MENU){
+                    for(int i = 0; i < SCREEN_HEIGHT/TILE_SIZE; i++){
+                        for(int j = 0; j < SCREEN_WIDTH/TILE_SIZE; j++){
+                            tiles[i][j] = 0;
+                        }
+                    }
 
-                std::cout << "(" << event.button.x/TILE_SIZE << ", " << event.button.y/TILE_SIZE << ")" <<"\n";
+                    for(int i = 0; i < SCREEN_WIDTH/TILE_SIZE; i++){
+
+                        tiles[19][i] = 1;
+                    }
+
+                    state = GAME;
+                }
+                if(!pushed){
+                pushed = true;
+
+                if(event.button.x > SCREEN_WIDTH/2 && event.button.y > SCREEN_HEIGHT/2){
+                    bk.mov(RIGHT);
+                }
+                if(event.button.x < SCREEN_WIDTH/2 && event.button.y > SCREEN_HEIGHT/2){
+                    bk.mov(LEFT);
+                }
+                if(event.button.y < SCREEN_HEIGHT/2){
+                 bk.rotate();
+                }
+                }
             break;
+
+            case SDL_FINGERDOWN:
+                if(state == MENU){
+                    for(int i = 0; i < SCREEN_HEIGHT/TILE_SIZE; i++){
+                        for(int j = 0; j < SCREEN_WIDTH/TILE_SIZE; j++){
+                            tiles[i][j] = 0;
+                        }
+                    }
+                    state = GAME;
+                }
+                if(!pushed){
+                    pushed = true;
+
+                    if(event.tfinger.x > SCREEN_WIDTH/2 && event.tfinger.y > SCREEN_HEIGHT/2){
+                        bk.mov(RIGHT);
+                    }
+                    if(event.tfinger.x < SCREEN_WIDTH/2 && event.tfinger.y > SCREEN_HEIGHT/2){
+                        bk.mov(LEFT);
+                    }
+                    if(event.tfinger.y < SCREEN_HEIGHT/2){
+                        bk.rotate();
+                    }
+                }
+            break;
+
+            case SDL_FINGERUP:
+                if(pushed){pushed = false;}
+            break;
+            case SDL_MOUSEBUTTONUP:
+                 if(pushed){pushed = false;}
+            break;
+
 
 
         }
 
         SDL_SetRenderDrawColor( game.renderer, 0x00, 0x00, 0x00, 0x00);
 
-        bk.draw();
+        if(state == MENU){
+            lines = 0;
+        }
+
+        if(state == GAME){
+            bk.draw();
 
 
 //        if(frames == 30 || frames == 15){
-        if(frames % 9 == 0){
-            if(bk.fall()){
-                for(int i = 0; i<4; i++){
-                    tiles[bk.squares[i].get_Tile().y][bk.squares[i].get_Tile().x] = (int)bk.squares[i].get_color();
-                }
-                bk = Block((block_type)(rand()%7));
-            }
-        }
-
-        for(int i = 0; i < SCREEN_HEIGHT/TILE_SIZE; i++){
-            for(int j = 0; j < SCREEN_WIDTH/TILE_SIZE; j++){
-                if(tiles[i][j] >= 1){
-                    squares.push_back(Square(j,i,(color)tiles[i][j]));
+            //if(frames % 9 == 0){
+            if(frames == 0 || frames == 10 || frames == 20 || frames == 30 || frames == 40 || frames == 50 || fallq){
+                if(bk.fall()){
+                    for(int i = 0; i<4; i++){
+                        tiles[bk.squares[i].get_Tile().y][bk.squares[i].get_Tile().x] = (int)bk.squares[i].get_color();
+                    }
+                    fallq = false;
+                    bk = Block((block_type)(rand()%7));
                 }
             }
+
+            for(int i = 0; i < SCREEN_HEIGHT/TILE_SIZE; i++){
+                for(int j = 0; j < SCREEN_WIDTH/TILE_SIZE; j++){
+                    if(tiles[i][j] >= 1){
+                        squares.push_back(Square(j,i,(color)tiles[i][j]));
+                    }
+                }
+            }
+
+            for(unsigned int i = 0; i<squares.size(); i++){
+                squares[i].draw();
+            }
+
+
+            // a hack to count lines
+            prevlines = lines;
+            if(updateTiles(lines)){
+                state = MENU;
+            }
+            if(lines != prevlines){
+                LOG_COMMENT(lines/10);
+            }
+
+            squares.clear();
+
         }
 
-        for(unsigned int i = 0; i<squares.size(); i++){
-            squares[i].draw();
-        }
-
-        updateTiles();
-
-        squares.clear();
 
         frames++;
         if(frames > 60){
@@ -522,8 +631,6 @@ int main(int argc, char* args[])
 
 
         SDL_SetRenderDrawColor( game.renderer, 0x00, 0x00, 0x00, 0x00);
-
-
 
         frameTime = SDL_GetTicks() - frameStart;
 
