@@ -85,6 +85,7 @@ public:
             sq.set_tile(sq.get_Tile().x+v.x, sq.get_Tile().y+v.y);
         }
 
+
         if(sqrs.size()>0){
             sqrs[0].set_tile(sq.get_prevTile().x, sq.get_prevTile().y);
         }
@@ -136,8 +137,8 @@ public:
 
 int main(int argc, char* args[])
 {
-    const int FPS = 15;
-	const int frameDelay = 1000 / FPS;
+    int FPS = 15;
+	int frameDelay = 1000 / FPS;
     srand (time(NULL));
 
 	Uint32 frameStart;
@@ -148,6 +149,8 @@ int main(int argc, char* args[])
     Snake sn;
     sn.v.x = 1;
     Food fd;
+
+    int frame = 0;
 
     while(game.running){
         SDL_RenderClear(game.renderer);
@@ -193,6 +196,16 @@ int main(int argc, char* args[])
                             sn.dir = DOWN;
                         }
                     break;
+                    case SDLK_p:
+                        if(FPS < 60){
+                            FPS++;
+                        }
+                    break;
+                    case SDLK_o:
+                        if(FPS > 15){
+                            FPS--;
+                        }
+                    break;
                     case SDLK_f:
                         fd.changePos();
                     break;
@@ -208,7 +221,8 @@ int main(int argc, char* args[])
                 break;
         }
 
-
+        frameDelay = 1000 / FPS;
+        
         if(sn.sq.get_Tile().x == fd.sq.get_Tile().x && sn.sq.get_Tile().y == fd.sq.get_Tile().y){
             fd.changePos();
             Square s = Square(sn.sq.get_prevTile().x, sn.sq.get_prevTile().y);
@@ -216,6 +230,7 @@ int main(int argc, char* args[])
         }
         sn.move_();
 
+        
         if(sn.checkCol()){
             sn.reset();
         }
@@ -225,6 +240,10 @@ int main(int argc, char* args[])
 
         SDL_SetRenderDrawColor( game.renderer, 0x00, 0x00, 0x00, 0x00);
 
+        frame++;
+        if(frame > 30){
+            frame = 1;
+        }
 
         frameTime = SDL_GetTicks() - frameStart;
 
