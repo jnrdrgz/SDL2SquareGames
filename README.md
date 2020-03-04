@@ -7,4 +7,4 @@ To play any of this games:
 g++ -lSDL2 Game.cpp Game.hpp main.cpp
 ```
 
-(unless the readme file in the folder of the game say other thing)
+(unless the readme file in the game folder say other anything different)
